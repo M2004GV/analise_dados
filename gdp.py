@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 #funcao para ler arquivos .csv
 df_gdp = pd.read_csv('GDP.csv', decimal='.')
@@ -45,4 +45,33 @@ df_gdp_end = df_gdp[df_gdp['Year'] == 1996]
 
 # Organizado por crescimento das regiões do menor para o maior gdp_pp
 ((df_gdp_end.groupby('Region')['gdp_pp'].mean()/df_gdp_start.groupby('Region')['gdp_pp'].mean() - 1) * 100).sort_values()
+
+
+#criar um array(arange) de valores igualmente espaçados em um intervalo específico
+arr_year = np.arange(df_gdp['Year'].min(), df_gdp['Year'].max())
+df_all_years = pd.DataFrame(arr_year, columns=['Year'])
+df_all_years.index = df_all_years['Year']
+
+
+df_years_off = ~df_all_years['Year'].isin(df_gdp['Year'])
+df_years_off = df_all_years.loc[df_years_off].index
+
+df_gdp = df_gdp.sort_values(['Country', 'Year'])
+
+df_gdp['delta_gdp'] = df_gdp['gdp_pp'] - df_gdp['gdp_pp'].shift(1)
+df_gdp['delta_year'] = df_gdp['Year'] - df_gdp['Year'].shift(1)
+df_gdp['gdp_year'] = (df_gdp['delta_gdp']/df_gdp['delta_year']).shift(-1)
+
+
+df_gdp['next_year'] = df_gdp['Year'].shift(-1)
+del df_gdp['delta_gdp'], df_gdp['delta_year']
+
+df_new_data = pd.DataFrame()
+
+for idx, row in df_gdp.iterrows():
+    if row['Year'] == 2011:
+        continue
+    years_to_add = df_years_off[(df_years_off < row['next_year']) & (df_years_off > row['Year'])]
+    break
+
 
