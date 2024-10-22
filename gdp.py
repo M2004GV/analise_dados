@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 #funcao para ler arquivos .csv
 df_gdp = pd.read_csv('GDP.csv', decimal='.')
@@ -74,6 +75,28 @@ for idx, row in df_gdp.iterrows():
     if row['Year'] == 2011:
         continue
     years_to_add = df_years_off[(df_years_off < row['next_year']) & (df_years_off > row['Year'])]
-    break
+
+    for new_year in years_to_add:
+        add_row = row.copy()#para que os dados não sejam alterados de imediato
+        add_row['gdp_pp'] = (new_year - add_row['Year']) * add_row['gdp_year'] + add_row['gdp_pp']
+        add_row['Year'] = new_year
+        add_row['kind'] = 'estimated'
+        df_new_data = pd.concat([df_new_data, add_row.to_frame().transpose()])
 
 
+df_gdp = pd.concat([df_gdp, df_new_data])
+df_gdp.sort_values(['Country', 'Year'], inplace=True)
+df_gdp.index = df_gdp['Year']
+
+df_gdp['kind'] = df_gdp['kind'].fillna('real')
+
+
+#visualização dos dados
+fig, ax = plt.subplots(figsize=(20, 5))
+
+country = 'United States'
+df_gdp[(df_gdp['kind'] == 'real') & (df_gdp['Country'] == country)].plot(kind='scatter', y='gdp_pp',x='Year', ax = ax)
+df_gdp[(df_gdp['kind'] == 'estimated') & (df_gdp['Country'] == country)].plot(kind='scatter', y='gdp_pp',x='Year', ax = ax, color='orange')
+
+#visualização apenas da evolução dos estados unidos
+plt.savefig('./gdp_per_capita_us.png')
